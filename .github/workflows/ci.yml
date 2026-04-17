@@ -44,9 +44,9 @@ jobs:
 
       - name: Run tests
         env:
-          DATABASE_URL: sqlite+aiosqlite:///:memory:
-          SECRET_KEY: ci-secret-key
-          FERNET_KEY: ZmDfcTF7_60GrrY167zsiPd67pEvs0aGOv2oasOM1Pg=
-          ANTHROPIC_CLIENT_ID: ci-client-id
-          ANTHROPIC_CLIENT_SECRET: ci-client-secret
+          DATABASE_URL: "sqlite+aiosqlite:///:memory:"
+          SECRET_KEY: "ci-secret-key"
+          FERNET_KEY: "ZmDfcTF7_60GrrY167zsiPd67pEvs0aGOv2oasOM1Pg="
+          ANTHROPIC_CLIENT_ID: "ci-client-id"
+          ANTHROPIC_CLIENT_SECRET: "ci-client-secret"
         run: pytest tests/ -v --tb=short
