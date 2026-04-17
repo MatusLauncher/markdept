@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Dashboard – Markdept{% endblock %}
+{% block content %}
+<hgroup>
+  <h1>Dashboard</h1>
+  <p>Welcome back, {{ user.display_name or user.email or "there" }}.</p>
+</hgroup>
+
+<div class="grid">
+  <article>
+    <h3>{{ campaign_count }}</h3>
+    <p>Campaigns</p>
+    <a href="/campaigns" role="button" class="outline">View All</a>
+  </article>
+  <article>
+    <h3>{{ scheduled_count }}</h3>
+    <p>Scheduled Posts</p>
+    <a href="/posts?status=scheduled" role="button" class="outline">View All</a>
+  </article>
+  <article>
+    <h3>{{ published_count }}</h3>
+    <p>Published Posts</p>
+    <a href="/posts?status=published" role="button" class="outline">View All</a>
+  </article>
+  <article>
+    <h3>{{ platform_count }}</h3>
+    <p>Connected Platforms</p>
+    <a href="/platforms" role="button" class="outline">Manage</a>
+  </article>
+</div>
+
+<section>
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <h2>Quick Post</h2>
+  </div>
+  {% if platforms %}
+  <article>
+    <form id="quick-post-form">
+      <div class="grid">
+        <label>
+          Platform Account
+          <select name="platform_account_id" required>
+            {% for p in platforms %}
+            <option value="{{ p.id }}">{{ p.platform }} — {{ p.account_name }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label>
+          Topic
+          <input type="text" name="topic" placeholder="e.g. New product launch" required>
+        </label>
+      </div>
+      <label>
+        Tone (optional)
+        <input type="text" name="tone" placeholder="e.g. professional, playful">
+      </label>
+      <div class="grid">
+        <button type="button" onclick="generateQuickPost()">Generate with Claude</button>
+        <button type="submit" id="publish-btn" disabled>Publish Now</button>
+      </div>
+      <textarea id="generated-content" name="content" placeholder="Generated content will appear here..." rows="4"></textarea>
+    </form>
+  </article>
+  {% else %}
+  <article>
+    <p>No platform accounts connected yet.</p>
+    <a href="/platforms" role="button">Connect a Platform</a>
+  </article>
+  {% endif %}
+</section>
+
+<section>
+  <h2>Upcoming Scheduled Posts</h2>
+  {% if upcoming_posts %}
+  <table>
+    <thead>
+      <tr><th>Platform</th><th>Content</th><th>Scheduled At</th><th>Actions</th></tr>
+    </thead>
+    <tbody>
+      {% for post in upcoming_posts %}
+      <tr>
+        <td><span class="platform-badge platform-{{ post.platform }}">{{ post.platform }}</span></td>
+        <td>{{ post.content[:80] }}{% if post.content|length > 80 %}…{% endif %}</td>
+        <td>{{ post.scheduled_at.strftime("%Y-%m-%d %H:%M") }}</td>
+        <td><a href="/posts">View</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p>No scheduled posts.</p>
+  {% endif %}
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/posts.js"></script>
+{% endblock %}
