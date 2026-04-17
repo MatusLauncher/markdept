@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Campaign – Markdept{% endblock %}
+{% block content %}
+<div id="campaign-detail" data-id="{{ campaign_id }}">
+  <article aria-busy="true"><p>Loading…</p></article>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/campaigns.js"></script>
+<script>loadCampaignDetail({{ campaign_id }});</script>
+{% endblock %}

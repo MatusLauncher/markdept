@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Platform Accounts – Markdept{% endblock %}
+{% block content %}
+<h1>Connected Platforms</h1>
+
+<div id="platform-list">
+  <article aria-busy="true"><p>Loading…</p></article>
+</div>
+
+<h2>Connect a Platform</h2>
+<div class="grid">
+  <article>
+    <h3>Mastodon</h3>
+    <p>Federated microblogging. Connect to any Mastodon instance.</p>
+    <form id="mastodon-connect-form">
+      <label>Instance URL <input type="url" name="instance_url" value="https://mastodon.social" required></label>
+      <button type="submit">Connect Mastodon</button>
+    </form>
+  </article>
+  <article>
+    <h3>LinkedIn</h3>
+    <p>Professional network. Post to your personal profile or organization.</p>
+    <a href="/api/platforms/linkedin/connect" role="button">Connect LinkedIn</a>
+  </article>
+  <article>
+    <h3>Lemmy</h3>
+    <p>Federated link aggregator. Post to communities on any Lemmy instance.</p>
+    <form id="lemmy-connect-form">
+      <label>Instance URL <input type="url" name="instance_url" value="https://lemmy.world" required></label>
+      <label>Username <input type="text" name="username" required></label>
+      <label>Password <input type="password" name="password" required></label>
+      <button type="submit">Connect Lemmy</button>
+    </form>
+  </article>
+  <article>
+    <h3>YouTube</h3>
+    <p>Upload videos and manage your YouTube channel.</p>
+    <a href="/api/platforms/youtube/connect" role="button">Connect YouTube</a>
+  </article>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/main.js"></script>
+<script>
+loadPlatformAccounts();
+
+document.getElementById('mastodon-connect-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const data = Object.fromEntries(new FormData(e.target));
+  const resp = await fetch('/api/platforms/mastodon/connect', {
+    method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data)
+  });
+  const json = await resp.json();
+  if (json.auth_url) window.location.href = json.auth_url;
+  else alert(json.detail || 'Error');
+});
+
+document.getElementById('lemmy-connect-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const data = Object.fromEntries(new FormData(e.target));
+  const resp = await fetch('/api/platforms/lemmy/connect', {
+    method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data)
+  });
+  const json = await resp.json();
+  if (resp.ok) { alert('Lemmy connected!'); location.reload(); }
+  else alert(json.detail || 'Error');
+});
+</script>
+{% endblock %}
