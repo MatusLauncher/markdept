@@ -16,11 +16,16 @@ router = APIRouter(tags=["pages"])
 templates = Jinja2Templates(directory="app/templates")
 
 
+def _r(request: Request, template: str, ctx: dict):
+    """Wrapper that uses the new Starlette TemplateResponse(request, name, ctx) API."""
+    return templates.TemplateResponse(request, template, ctx)
+
+
 @router.get("/", response_class=HTMLResponse)
 async def index(request: Request, user: User | None = Depends(get_optional_user)):
     if user:
         return RedirectResponse(url="/dashboard")
-    return templates.TemplateResponse("login.html", {"request": request, "user": None})
+    return _r(request, "login.html", {"user": None})
 
 
 @router.get("/dashboard", response_class=HTMLResponse)
@@ -70,19 +75,15 @@ async def dashboard(
     )
     upcoming_posts = upcoming_result.scalars().all()
 
-    return templates.TemplateResponse(
-        "dashboard.html",
-        {
-            "request": request,
-            "user": user,
-            "campaign_count": campaign_count or 0,
-            "scheduled_count": scheduled_count or 0,
-            "published_count": published_count or 0,
-            "platform_count": platform_count or 0,
-            "platforms": platforms,
-            "upcoming_posts": upcoming_posts,
-        },
-    )
+    return _r(request, "dashboard.html", {
+        "user": user,
+        "campaign_count": campaign_count or 0,
+        "scheduled_count": scheduled_count or 0,
+        "published_count": published_count or 0,
+        "platform_count": platform_count or 0,
+        "platforms": platforms,
+        "upcoming_posts": upcoming_posts,
+    })
 
 
 @router.get("/campaigns", response_class=HTMLResponse)
@@ -91,7 +92,7 @@ async def campaigns_page(
 ):
     if not user:
         return RedirectResponse(url="/")
-    return templates.TemplateResponse("campaigns/list.html", {"request": request, "user": user})
+    return _r(request, "campaigns/list.html", {"user": user})
 
 
 @router.get("/campaigns/new", response_class=HTMLResponse)
@@ -100,7 +101,7 @@ async def campaigns_new_page(
 ):
     if not user:
         return RedirectResponse(url="/")
-    return templates.TemplateResponse("campaigns/create.html", {"request": request, "user": user})
+    return _r(request, "campaigns/create.html", {"user": user})
 
 
 @router.get("/campaigns/{campaign_id}", response_class=HTMLResponse)
@@ -111,10 +112,7 @@ async def campaign_detail_page(
 ):
     if not user:
         return RedirectResponse(url="/")
-    return templates.TemplateResponse(
-        "campaigns/detail.html",
-        {"request": request, "user": user, "campaign_id": campaign_id},
-    )
+    return _r(request, "campaigns/detail.html", {"user": user, "campaign_id": campaign_id})
 
 
 @router.get("/posts", response_class=HTMLResponse)
@@ -123,7 +121,7 @@ async def posts_page(
 ):
     if not user:
         return RedirectResponse(url="/")
-    return templates.TemplateResponse("posts/list.html", {"request": request, "user": user})
+    return _r(request, "posts/list.html", {"user": user})
 
 
 @router.get("/posts/new", response_class=HTMLResponse)
@@ -144,10 +142,9 @@ async def posts_new_page(
         select(Campaign).where(Campaign.user_id == user.id)
     )
     campaigns = campaigns_result.scalars().all()
-    return templates.TemplateResponse(
-        "posts/create.html",
-        {"request": request, "user": user, "platforms": platforms, "campaigns": campaigns},
-    )
+    return _r(request, "posts/create.html", {
+        "user": user, "platforms": platforms, "campaigns": campaigns
+    })
 
 
 @router.get("/platforms", response_class=HTMLResponse)
@@ -156,7 +153,7 @@ async def platforms_page(
 ):
     if not user:
         return RedirectResponse(url="/")
-    return templates.TemplateResponse("platforms/list.html", {"request": request, "user": user})
+    return _r(request, "platforms/list.html", {"user": user})
 
 
 @router.get("/analytics", response_class=HTMLResponse)
@@ -165,4 +162,4 @@ async def analytics_page(
 ):
     if not user:
         return RedirectResponse(url="/")
-    return templates.TemplateResponse("analytics/dashboard.html", {"request": request, "user": user})
+    return _r(request, "analytics/dashboard.html", {"user": user})

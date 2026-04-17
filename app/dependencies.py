@@ -35,13 +35,9 @@ def get_session_user_id(request: Request) -> int | None:
         return None
 
 
-async def get_current_user(
-    request: Request, db: AsyncSession = None
-) -> User:
-    if db is None:
-        async with AsyncSessionLocal() as db:
-            return await _load_user(request, db)
-    return await _load_user(request, db)
+async def get_current_user(request: Request) -> User:
+    async with AsyncSessionLocal() as db:
+        return await _load_user(request, db)
 
 
 async def _load_user(request: Request, db: AsyncSession) -> User:
