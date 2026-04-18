@@ -114,6 +114,61 @@ router.get("/callback", async (c) => {
   return res;
 });
 
+router.get("/claude-code", async (c) => {
+  const credPath = `${process.env.HOME ?? "/root"}/.claude/.credentials.json`;
+  let creds: { claudeAiOauth?: { accessToken?: string; refreshToken?: string; expiresAt?: number } };
+  try {
+    const raw = await Bun.file(credPath).text();
+    creds = JSON.parse(raw);
+  } catch {
+    return c.redirect("/?error=claude_code_credentials_not_found");
+  }
+
+  const oauth = creds.claudeAiOauth;
+  if (!oauth?.accessToken) return c.redirect("/?error=claude_code_credentials_not_found");
+
+  const userRes = await fetch("https://api.anthropic.com/v1/oauth/userinfo", {
+    headers: { Authorization: `Bearer ${oauth.accessToken}` },
+  });
+  if (!userRes.ok) return c.redirect("/?error=userinfo_failed");
+  const userInfo = await userRes.json() as { sub: string; email: string; name?: string };
+
+  const existing = await db.select().from(users).where(eq(users.anthropicUserId, userInfo.sub)).limit(1);
+  let userId: number;
+  if (existing[0]) {
+    userId = existing[0].id;
+    await db.update(users).set({ email: userInfo.email, name: userInfo.name ?? userInfo.email, updatedAt: new Date() }).where(eq(users.id, userId));
+  } else {
+    const inserted = await db.insert(users).values({
+      anthropicUserId: userInfo.sub,
+      email: userInfo.email,
+      name: userInfo.name ?? userInfo.email,
+    }).returning({ id: users.id });
+    userId = inserted[0].id;
+  }
+
+  const expiresAt = oauth.expiresAt ? new Date(oauth.expiresAt) : null;
+  const existingToken = await db.select().from(oauthTokens).where(eq(oauthTokens.userId, userId)).limit(1);
+  const tokenValues = {
+    accessTokenEncrypted: await encrypt(oauth.accessToken),
+    refreshTokenEncrypted: oauth.refreshToken ? await encrypt(oauth.refreshToken) : null,
+    expiresAt,
+    tokenType: "Bearer",
+    scope: "org:read_claude",
+    updatedAt: new Date(),
+  };
+  if (existingToken[0]) {
+    await db.update(oauthTokens).set(tokenValues).where(eq(oauthTokens.userId, userId));
+  } else {
+    await db.insert(oauthTokens).values({ userId, ...tokenValues });
+  }
+
+  const session = await signSession({ userId });
+  const res = c.redirect("/");
+  res.headers.set("Set-Cookie", `session=${session}; HttpOnly; Path=/; SameSite=Lax`);
+  return res;
+});
+
 router.post("/logout", (c) => {
   const res = c.json({ ok: true });
   res.headers.set("Set-Cookie", "session=; HttpOnly; Path=/; Max-Age=0");

@@ -18,6 +18,22 @@ export function Login() {
       >
         Sign in with Claude
       </a>
+      <a
+        href="/auth/claude-code"
+        style={{
+          display: "inline-block",
+          marginTop: 12,
+          background: "#1e293b",
+          color: "#fff",
+          padding: "12px 32px",
+          borderRadius: 8,
+          textDecoration: "none",
+          fontWeight: 600,
+          fontSize: 16,
+        }}
+      >
+        Sign in with Claude Code
+      </a>
     </div>
   );
 }
