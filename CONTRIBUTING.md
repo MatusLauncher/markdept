@@ -1,62 +1,62 @@
 # Contributing to Markdept
 
-Thank you for your interest in contributing!
-
-## Setup
+## Development Setup
 
 ```bash
-git clone https://github.com/MatusLauncher/markdept.git
-cd markdept
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-pip install pytest pytest-asyncio httpx ruff
-cp .env.example .env   # fill in at minimum FERNET_KEY and SECRET_KEY
+bun install
+cp .env.example .env   # fill required vars
+bun run db:push        # create tables in Neon
+bun run dev            # Hono :8000 + Vite :5173
 ```
 
-## Running the test suite
+## Project Structure
+
+```
+src/                   # Hono backend
+  config.ts            # Zod-validated env vars
+  index.ts             # App entry, routes wired, scheduler started
+  db/
+    schema.ts          # Drizzle table definitions
+    index.ts           # Neon + Drizzle singleton
+  auth/
+    session.ts         # HMAC-SHA256 signed cookies
+    middleware.ts      # requireAuth / optionalAuth
+  services/
+    crypto.ts          # AES-256-GCM encrypt/decrypt
+    anthropic.ts       # Claude API + token refresh
+    contentGenerator.ts# AI prompts per platform
+    scheduler.ts       # setTimeout-based post scheduler
+    platforms/         # Per-platform API clients
+  routes/              # Hono routers
+
+client/src/            # React frontend
+  api/                 # API wrapper functions
+  hooks/               # useAuth
+  components/          # Shared UI components
+  pages/               # Route pages
+
+tests/                 # bun:test unit tests
+```
+
+## Running Tests
 
 ```bash
-pytest tests/ -v
+bun test
 ```
 
-## Linting
+## Adding a New Platform
 
-```bash
-ruff check app/ tests/
-```
+1. Create `src/services/platforms/<name>.ts` implementing `PlatformClient` (`post`, `getMetrics`).
+2. Add platform prompts and limits to `src/services/contentGenerator.ts`.
+3. Add OAuth/connect routes to `src/routes/platforms.ts`.
+4. Add analytics metrics fetching to `src/routes/analytics.ts`.
+5. Add the connect button/flow to `client/src/pages/platforms/PlatformList.tsx`.
+6. Add platform colour to `client/src/components/PlatformBadge.tsx`.
 
-CI runs both on every push. Please ensure they pass before opening a PR.
+## PR Checklist
 
-## Branch naming
-
-Use descriptive branch names prefixed by type:
-
-- `feat/` — new feature
-- `fix/` — bug fix
-- `docs/` — documentation only
-- `chore/` — tooling, CI, dependencies
-
-## Pull request checklist
-
-- [ ] Tests pass (`pytest tests/ -v`)
-- [ ] Lint is clean (`ruff check app/ tests/`)
-- [ ] New behaviour is covered by at least one test
-- [ ] `.env.example` updated if new env vars were added
-- [ ] No secrets or `.env` files committed
-
-## Adding a new platform
-
-1. Create `app/services/platforms/<platform>.py` implementing `BasePlatformClient` (`post` + `get_metrics`)
-2. Add OAuth / auth connect endpoints to `app/routers/platforms.py`
-3. Add a UI card to `app/templates/platforms/list.html`
-4. Register the client in the `PLATFORM_CLIENTS` dicts in `app/routers/posts.py` and `app/routers/analytics.py`
-5. Add a platform-specific system prompt to `app/services/content_generator.py`
-6. Add any new env vars to `.env.example` and `app/config.py`
-7. Add tests under `tests/`
-
-## Code style
-
-- Async throughout — use `httpx.AsyncClient` and `AsyncSession`
-- No new comments unless the *why* is non-obvious
-- No bare `except Exception` without re-raising or logging
-- Keep each router focused; business logic belongs in `services/`
+- [ ] `bun test` passes
+- [ ] `bun tsc --noEmit` passes (backend)
+- [ ] `cd client && bun tsc --noEmit` passes (frontend)
+- [ ] `bun run build` succeeds
+- [ ] No secrets committed
