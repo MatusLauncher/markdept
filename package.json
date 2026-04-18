@@ -10,7 +10,7 @@
     "start": "bun run build && bun src/index.ts",
     "db:push": "bunx drizzle-kit push",
     "db:generate": "bunx drizzle-kit generate",
-    "typecheck": "bun tsc --noEmit && cd client && bun tsc --noEmit",
+    "typecheck": "bunx tsc --noEmit && cd client && bunx tsc --noEmit",
     "test": "bun test"
   },
   "dependencies": {
